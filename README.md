@@ -2,9 +2,10 @@
 
 A multi-layer perceptron written in C.
 
-The entire code is a single C file. The program admits CSV files as data and all the important hyperparameters as arguments from the command line. In order to compile and use the program download the repository and:
+The entire code is a single C file. The program admits CSV files as data and all the important hyperparameters as arguments from the command line. In order to compile and use the program:
 
 ```{language=bash}
+git clone 'https://github.com/DarkAdin/CCeptron.git'
 cd CCeptron
 make
 ./CCeptron file.csv input_size hidden_size hidden_size2 output_size epochs learning_rate annealing_rate
@@ -26,6 +27,8 @@ Once all training epochs have passed, the network tests itself on the training d
 The random number generator is seeded with the current time and the process ID.
 
 In every iteration, CCeptron trains on a randomly picked row of the training data set, and does the same in every iteration of the testing stage, so it does not need to shuffle the training data and/or the testing data.
+
+The learning rate is updated every epoch by the annealing rate.
 
 ## Example of valid data
 
