@@ -18,7 +18,18 @@ DEBUG = 1
 
 in the *Makefile* if you wish to use it with a debugger.
 
+![](neuralnetwork.png "Default neural network")
+
 The network comes with two hidden layers and one output layer by default. The two hidden layers use *tanh* as the activation function and the output layer uses *sigmoid*.
+
+In the image above, we can see an idea of such network:
+
+* *m* parameters
+* *h* hidden neurons in the first hidden layer
+* *j* hidden neurons in the second hidden layer
+* One output neuron in the output layer
+
+Each neuron has its own bias. After applying weights and bias in each neuron, the activation function produces its output, which will be fed into the next layer until the output layer is reached. The output of the output layer will be faced against the real value present in the training data, and with that value the loss function will be calculated. With the loss function (its derivative, to be more specific) the network computes all gradients, which are useful in the *back propagation* process when we will update all weights and biases before the next *forward propagation* cycle.
 
 The addition and modification of any aspect of the network should be easy enough, whether you want to add or remove hidden layers, and/or different activation functions.
 
