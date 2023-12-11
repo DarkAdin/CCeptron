@@ -11,4 +11,4 @@ endif
 LDFLAGS = -lm
 
 test:
-	$(CC) -o ML ML.c $(CFLAGS) $(LDFLAGS)
+	$(CC) -o CCeptron CCeptron.c $(CFLAGS) $(LDFLAGS)
