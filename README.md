@@ -44,6 +44,8 @@ Which consists of
 sepal_length,sepal_width,petal_length,petal_width,class
 ```
 
+If we wanted to train on this data, we should specify 4 as the input size and 1 as the output size (4 parameters and 1 class).
+
 The class is encoded in the form of a number as well. If we have 3 different species in the *iris* dataset, an example of encoding them could be *0.0*, *0.5* and *1.0*. The maximum number of decimals in a data point should be 6.
 
 ## Inspirations
