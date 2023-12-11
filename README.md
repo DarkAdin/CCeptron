@@ -2,12 +2,20 @@
 
 A multi-layer perceptron written in C.
 
-The entire code is a single C file. The program admits CSV files as data and all the important hyperparameters as arguments from the command line. In order to compile and use the program:
+The entire code is a single C file. The program admits CSV files as data and all the important hyperparameters as arguments from the command line. In order to compile and use the program download the repository and:
 
 ```{language=bash}
+cd CCeptron
 make
 ./CCeptron file.csv input_size hidden_size hidden_size2 output_size epochs learning_rate annealing_rate
 ```
+
+This will compile the program with the appropiate flags. Set
+```{language=bash}
+DEBUG = 1
+```
+
+in the *Makefile* if you wish to use it with a debugger.
 
 The network comes with two hidden layers and one output layer by default. The two hidden layers use *tanh* as the activation function and the output layer uses *sigmoid*.
 
