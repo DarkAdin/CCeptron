@@ -149,7 +149,7 @@ void backwardpropagation (double input[INPUT_SIZE], double hidden[HIDDEN_SIZE], 
 int main (int argc, char **argv) {
 
     if (argc != 9) {
-        puts ("./ML file.csv input_size hidden_size hidden_size2 output_size epochs learning_rate annealing_rate");
+        puts ("./CCeptron file.csv input_size hidden_size hidden_size2 output_size epochs learning_rate annealing_rate");
         return 1;
     }
 
