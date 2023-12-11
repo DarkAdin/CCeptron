@@ -37,7 +37,7 @@ The class is encoded in the form of a number as well. If we have 3 different spe
 
 ## Inspirations
 
-CCeptron is a minimalistic approach to a simple neural network concept, the perceptron. As such, it is not a fully capable neural network. But it should be easily modifiable to suit general needs and make predictions on small-to-medium complexity data. Check out these amazing machine learning projects in C which heavily inspired CCeptron:
+CCeptron is a minimalistic approach to a simple neural network concept, [the perceptron](https://en.wikipedia.org/wiki/Perceptron). As such, it is not a fully capable neural network. But it should be easily modifiable to suit general needs and make predictions on small-to-medium complexity data. Check out these amazing machine learning projects in C which heavily inspired CCeptron:
 
 * [tinn](https://github.com/glouw/tinn): tiny neural network written in C with one hidden layer.
 * [darknet](https://github.com/glouw/tinn): one of the biggest machine learning projects in C, works with CUDA and heavily influenced the Computer Vision field, capable of almost anything.
