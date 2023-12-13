@@ -62,6 +62,14 @@ float dlrelu ( float a ) {
     else return 1;
 }
 
+// SELU
+float selu ( float a ) {
+    return (a>=0) * 1.0507 * a + (a<0) * 1.0507 * 1.6732 * (expf(a) - 1);
+}
+float dselu (float a) {
+    return (a>=0) * 1.0507 + (a<0) * (a + 1.0507 * 1.6732);
+}
+
 // Return a random int in a specified range
 int randrange (int min, int max) {
     return rand() % (max-min+1) + min;
@@ -82,7 +90,7 @@ void forwardpropagation (double input[INPUT_SIZE], double weights_ih[INPUT_SIZE]
             hidden[i] += input[j] * weights_ih[j][i];
         }
         hidden[i] += bias_h[i];
-        hidden[i] = tanh(hidden[i]);
+        hidden[i] = selu(hidden[i]);
     }
 
     // Calculate hidden2 layer values
@@ -92,7 +100,7 @@ void forwardpropagation (double input[INPUT_SIZE], double weights_ih[INPUT_SIZE]
             hidden2[i] += hidden[j] * weights_hh[j][i];
         }
         hidden2[i] += bias_hh[i];
-        hidden2[i] = tanh(hidden2[i]);
+        hidden2[i] = selu(hidden2[i]);
     }
 
     // Calculate output layer values
@@ -117,31 +125,36 @@ void backwardpropagation (double input[INPUT_SIZE], double hidden[HIDDEN_SIZE], 
     double hidden_errors[HIDDEN_SIZE];
     double hidden_gradients[HIDDEN_SIZE];
 
-    for (int a = 0; a < INPUT_SIZE; a++) {
-        for (int h = 0; h < HIDDEN_SIZE; h++) {
-            hidden_errors[h] = 0;
-            for (int i = 0; i < HIDDEN_SIZE2; i++) {
-                hidden2_errors[i] = 0;
-                for (int j = 0; j < OUTPUT_SIZE; j++) {
-                    output_gradients[j] = derror(target[j], output[j]) * dsigmoid (output[j]);
+    for (int i = 0; i < HIDDEN_SIZE2; i++) {
+        hidden2_errors[i] = 0;
+        for (int j = 0; j < OUTPUT_SIZE; j++) {
+            output_gradients[j] = derror (target[j], output[j]) * dsigmoid (output[j]);
 
-                    // Output layer
-                    weights_ho[i][j] += LEARNING_RATE * output_gradients[j] * hidden2[i];
-                    bias_o[j] += LEARNING_RATE * output_gradients[j];
-                    hidden2_errors[i] += output_gradients[j] * weights_ho[i][j];
-                }
-                hidden2_gradients[i] = hidden2_errors[i] * dtanh(hidden2[i]);
+            weights_ho[i][j] += LEARNING_RATE * output_gradients[j] * hidden2[i];
+            bias_o[j] += LEARNING_RATE * output_gradients[j];
 
-                // Hidden layer 2
-                weights_hh[h][i] += LEARNING_RATE * hidden2_gradients[i] * hidden[h];
-                bias_hh[i] += LEARNING_RATE * hidden2_gradients[i];
-                hidden_errors[h] += hidden2_gradients[i] * weights_hh[h][i];
-            }
-            hidden_gradients[h] = hidden_errors[h] * dtanh(hidden[h]);
+            hidden2_errors[i] += output_gradients[j] * weights_ho[i][j];
+        }
+    }
 
-            // Hidden layer 1
-            weights_ih[a][h] += LEARNING_RATE * hidden_gradients[h] * input[a];
-            bias_h[h] += LEARNING_RATE * hidden_gradients[h];
+    for (int i = 0; i < HIDDEN_SIZE; i++) {
+        hidden_errors[i] = 0;
+        for (int j = 0; j < HIDDEN_SIZE2; j++) {
+            hidden2_gradients[j] = hidden2_errors[j] * dselu(hidden2[j]);
+
+            weights_hh[i][j] += LEARNING_RATE * hidden2_gradients[j] * hidden[i];
+            bias_hh[j] += LEARNING_RATE * hidden2_gradients[j];
+
+            hidden_errors[i] += hidden2_gradients[j] * weights_hh[i][j];
+        }
+    }
+
+    for (int i = 0; i < INPUT_SIZE; i++) {
+        for (int j = 0; j < HIDDEN_SIZE; j++) {
+            hidden_gradients[j] = hidden_errors[j] * dselu(hidden[j]);
+
+            weights_ih[i][j] += LEARNING_RATE * hidden_gradients[j] * input[i];
+            bias_h[j] += LEARNING_RATE * hidden_gradients[j];
         }
     }
 }
@@ -290,9 +303,8 @@ int main (int argc, char **argv) {
         forwardpropagation(input, weights_ih, weights_hh, weights_ho, hidden, hidden2, output, bias_h, bias_hh, bias_o);
 
         for (int i = 0; i < OUTPUT_SIZE; i++) {
-            printf("Output: %.2lf, Orig: %.2lf, Error: %.2f\n", output[i], targets[selected_row][i], fabs(output[i] - targets[selected_row][i]));
+            printf("Output: %.2lf, Target: %.2lf, Accuracy: %.2f%%\n", output[i], targets[selected_row][i], 100 - fabs(output[i] - targets[selected_row][i])*100);
         }
-        puts ( "---" );
     }
 
     return 0;
