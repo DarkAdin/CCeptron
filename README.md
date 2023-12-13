@@ -20,7 +20,7 @@ in the *Makefile* if you wish to use it with a debugger.
 
 ![](neuralnetwork.png "Default neural network")
 
-The network comes with two hidden layers and one output layer by default. The two hidden layers use *tanh* as the activation function and the output layer uses *sigmoid*.
+The network comes with two hidden layers and one output layer by default. The two hidden layers use *SELU* as the activation function and the output layer uses *sigmoid*.
 
 In the image above, we can see an idea of such network:
 
