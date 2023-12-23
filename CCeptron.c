@@ -5,20 +5,30 @@
 #include<math.h>
 #include<string.h>
 
-int INPUT_SIZE, HIDDEN_SIZE, HIDDEN_SIZE2, OUTPUT_SIZE, EPOCHS;
+int INPUT_SIZE, HIDDEN_SIZE, HIDDEN_SIZE2, HIDDEN_SIZE3, OUTPUT_SIZE, EPOCHS;
 float LEARNING_RATE, ANNEALING_RATE;
 
-// Error functions
+/* ERROR FUNCTIONS */
 double error (double prediction, double target) {
+
     float delta = 1.35;
+
     // HUBER LOSS
-    if (fabs(prediction-target) < delta) return 0.5 * (prediction-target) * (prediction-target);
-    else return (delta * fabs(prediction-target) - 0.5 * delta * delta);
+    if (fabs(prediction-target) < delta) {
+        return 0.5 * (prediction-target) * (prediction-target);
+    }
+    else {
+        return (delta * fabs(prediction-target) - 0.5 * delta * delta);
+    }
 }
 double derror (double prediction, double target) {
+
     float delta = 1.35;
+
     // HUBER LOSS
-    if (fabs(prediction-target) < delta) return prediction-target;
+    if (fabs(prediction-target) < delta) {
+        return prediction-target;
+    }
     else {
         // Negatives
         if (prediction-target < 0) return -delta;
@@ -29,6 +39,8 @@ double derror (double prediction, double target) {
     }
 }
 
+/* ACTIVATION FUNCTIONS */
+
 // SIGMOID
 float sigmoid ( float a ) {
     return 1 / (1 + expf(-a));
@@ -38,8 +50,11 @@ float dsigmoid ( float a ) {
 }
 
 // TANH
+float ttanh ( float a ) {
+    return (expf(a) - expf(-a)) / (expf(a) + expf(-a));
+}
 float dtanh ( float a ) {
-    return 1 - tanh(a) * tanh(a);
+    return 1 - ttanh(a) * ttanh(a);
 }
 
 // RELU
@@ -62,14 +77,6 @@ float dlrelu ( float a ) {
     else return 1;
 }
 
-// SELU
-float selu ( float a ) {
-    return (a>=0) * 1.0507 * a + (a<0) * 1.0507 * 1.6732 * (expf(a) - 1);
-}
-float dselu (float a) {
-    return (a>=0) * 1.0507 + (a<0) * (a + 1.0507 * 1.6732);
-}
-
 // Return a random int in a specified range
 int randrange (int min, int max) {
     return rand() % (max-min+1) + min;
@@ -81,7 +88,7 @@ float frand () {
 }
 
 // Forward propagation
-void forwardpropagation (double input[INPUT_SIZE], double weights_ih[INPUT_SIZE][HIDDEN_SIZE], double weights_hh[HIDDEN_SIZE][HIDDEN_SIZE2], double weights_ho[HIDDEN_SIZE2][OUTPUT_SIZE], double hidden[HIDDEN_SIZE], double hidden2[HIDDEN_SIZE2], double output[OUTPUT_SIZE], double bias_h[HIDDEN_SIZE], double bias_hh[HIDDEN_SIZE2], double bias_o[OUTPUT_SIZE]) {
+void forwardpropagation (double input[INPUT_SIZE], double weights_ih[INPUT_SIZE][HIDDEN_SIZE], double weights_hh[HIDDEN_SIZE][HIDDEN_SIZE2], double weights_hhh[HIDDEN_SIZE2][HIDDEN_SIZE3], double weights_ho[HIDDEN_SIZE3][OUTPUT_SIZE], double hidden[HIDDEN_SIZE], double hidden2[HIDDEN_SIZE2], double hidden3[HIDDEN_SIZE3], double output[OUTPUT_SIZE], double bias_h[HIDDEN_SIZE], double bias_hh[HIDDEN_SIZE2], double bias_hhh[HIDDEN_SIZE3], double bias_o[OUTPUT_SIZE]) {
 
     // Calculate hidden layer values
     for (int i = 0; i < HIDDEN_SIZE; i++) {
@@ -90,7 +97,7 @@ void forwardpropagation (double input[INPUT_SIZE], double weights_ih[INPUT_SIZE]
             hidden[i] += input[j] * weights_ih[j][i];
         }
         hidden[i] += bias_h[i];
-        hidden[i] = selu(hidden[i]);
+        hidden[i] = lrelu(hidden[i]);
     }
 
     // Calculate hidden2 layer values
@@ -100,14 +107,24 @@ void forwardpropagation (double input[INPUT_SIZE], double weights_ih[INPUT_SIZE]
             hidden2[i] += hidden[j] * weights_hh[j][i];
         }
         hidden2[i] += bias_hh[i];
-        hidden2[i] = selu(hidden2[i]);
+        hidden2[i] = lrelu(hidden2[i]);
+    }
+
+    // Calculate hidden3 layer values
+    for (int i = 0; i < HIDDEN_SIZE3; i++) {
+        hidden3[i] = 0;
+        for (int j = 0; j < HIDDEN_SIZE2; j++) {
+            hidden3[i] += hidden2[j] * weights_hhh[j][i];
+        }
+        hidden3[i] += bias_hhh[i];
+        hidden3[i] = lrelu(hidden3[i]);
     }
 
     // Calculate output layer values
     for (int i = 0; i < OUTPUT_SIZE; i++) {
         output[i] = 0;
-        for (int j = 0; j < HIDDEN_SIZE2; j++) {
-            output[i] += hidden2[j] * weights_ho[j][i];
+        for (int j = 0; j < HIDDEN_SIZE3; j++) {
+            output[i] += hidden3[j] * weights_ho[j][i];
         }
         output[i] += bias_o[i];
         output[i] = sigmoid(output[i]);
@@ -115,9 +132,12 @@ void forwardpropagation (double input[INPUT_SIZE], double weights_ih[INPUT_SIZE]
 }
 
 // Backpropagation
-void backwardpropagation (double input[INPUT_SIZE], double hidden[HIDDEN_SIZE], double hidden2[HIDDEN_SIZE2], double output[OUTPUT_SIZE], double target[OUTPUT_SIZE], double weights_ih[INPUT_SIZE][HIDDEN_SIZE], double weights_hh[HIDDEN_SIZE][HIDDEN_SIZE2], double weights_ho[HIDDEN_SIZE2][OUTPUT_SIZE], double bias_h[HIDDEN_SIZE], double bias_hh[HIDDEN_SIZE2], double bias_o[OUTPUT_SIZE]) {
+void backpropagation (double input[INPUT_SIZE], double hidden[HIDDEN_SIZE], double hidden2[HIDDEN_SIZE2], double hidden3[HIDDEN_SIZE3], double output[OUTPUT_SIZE], double target[OUTPUT_SIZE], double weights_ih[INPUT_SIZE][HIDDEN_SIZE], double weights_hh[HIDDEN_SIZE][HIDDEN_SIZE2], double weights_hhh[HIDDEN_SIZE2][HIDDEN_SIZE3], double weights_ho[HIDDEN_SIZE3][OUTPUT_SIZE], double bias_h[HIDDEN_SIZE], double bias_hh[HIDDEN_SIZE2], double bias_hhh[HIDDEN_SIZE3], double bias_o[OUTPUT_SIZE]) {
 
     double output_gradients[OUTPUT_SIZE];
+
+    double hidden3_errors[HIDDEN_SIZE3];
+    double hidden3_gradients[HIDDEN_SIZE3];
 
     double hidden2_errors[HIDDEN_SIZE2];
     double hidden2_gradients[HIDDEN_SIZE2];
@@ -125,22 +145,34 @@ void backwardpropagation (double input[INPUT_SIZE], double hidden[HIDDEN_SIZE], 
     double hidden_errors[HIDDEN_SIZE];
     double hidden_gradients[HIDDEN_SIZE];
 
-    for (int i = 0; i < HIDDEN_SIZE2; i++) {
-        hidden2_errors[i] = 0;
+    for (int i = 0; i < HIDDEN_SIZE3; i++) {
+        hidden3_errors[i] = 0;
         for (int j = 0; j < OUTPUT_SIZE; j++) {
             output_gradients[j] = derror (target[j], output[j]) * dsigmoid (output[j]);
 
-            weights_ho[i][j] += LEARNING_RATE * output_gradients[j] * hidden2[i];
+            weights_ho[i][j] += LEARNING_RATE * output_gradients[j] * hidden3[i];
             bias_o[j] += LEARNING_RATE * output_gradients[j];
 
-            hidden2_errors[i] += output_gradients[j] * weights_ho[i][j];
+            hidden3_errors[i] += output_gradients[j] * weights_ho[i][j];
+        }
+    }
+
+    for (int i = 0; i < HIDDEN_SIZE2; i++) {
+        hidden2_errors[i] = 0;
+        for (int j = 0; j < HIDDEN_SIZE3; j++) {
+            hidden3_gradients[j] = hidden3_errors[j] * dlrelu(hidden3[j]);
+
+            weights_hhh[i][j] += LEARNING_RATE * hidden3_gradients[j] * hidden2[i];
+            bias_hhh[j] += LEARNING_RATE * hidden3_gradients[j];
+
+            hidden2_errors[i] += hidden3_gradients[j] * weights_hhh[i][j];
         }
     }
 
     for (int i = 0; i < HIDDEN_SIZE; i++) {
         hidden_errors[i] = 0;
         for (int j = 0; j < HIDDEN_SIZE2; j++) {
-            hidden2_gradients[j] = hidden2_errors[j] * dselu(hidden2[j]);
+            hidden2_gradients[j] = hidden2_errors[j] * dlrelu(hidden2[j]);
 
             weights_hh[i][j] += LEARNING_RATE * hidden2_gradients[j] * hidden[i];
             bias_hh[j] += LEARNING_RATE * hidden2_gradients[j];
@@ -151,7 +183,7 @@ void backwardpropagation (double input[INPUT_SIZE], double hidden[HIDDEN_SIZE], 
 
     for (int i = 0; i < INPUT_SIZE; i++) {
         for (int j = 0; j < HIDDEN_SIZE; j++) {
-            hidden_gradients[j] = hidden_errors[j] * dselu(hidden[j]);
+            hidden_gradients[j] = hidden_errors[j] * dlrelu(hidden[j]);
 
             weights_ih[i][j] += LEARNING_RATE * hidden_gradients[j] * input[i];
             bias_h[j] += LEARNING_RATE * hidden_gradients[j];
@@ -159,70 +191,8 @@ void backwardpropagation (double input[INPUT_SIZE], double hidden[HIDDEN_SIZE], 
     }
 }
 
-int main (int argc, char **argv) {
-
-    if (argc != 9) {
-        puts ("./CCeptron file.csv input_size hidden_size hidden_size2 output_size epochs learning_rate annealing_rate");
-        return 1;
-    }
-
-    FILE *datafile = fopen (argv[1], "r");
-
-    if (!datafile) {
-        puts ("Invalid data file.");
-        return 1;
-    }
-
-    // Seed random number generator
-    srand(time(0) + getpid());
-
-    INPUT_SIZE = atoi (argv[2]);
-    HIDDEN_SIZE = atoi (argv[3]);
-    HIDDEN_SIZE2 = atoi (argv[4]);
-    OUTPUT_SIZE = atoi (argv[5]);
-    EPOCHS = atoi (argv[6]);
-    LEARNING_RATE = atof (argv[7]);
-    ANNEALING_RATE = atof (argv[8]);
-
-    int rows = 0;
-
-    //TODO: malloc/realloc dinamically
-    char line[INPUT_SIZE*10];
-
-    // Get line count
-    while (fgets(line, sizeof(line), datafile)!=NULL) rows++;
-
-    // Reset position on file
-    rewind(datafile);
-
-    // Container of the all the data. Last value is the class.
-    float container[rows][INPUT_SIZE+1];
-
-    // Reset row counter
-    rows -= rows;
-
-    // Parse lines
-    while (fgets(line, sizeof(line), datafile)) {
-        strcpy (line, strtok(line,"\n"));
-        for (int i = 0; i<INPUT_SIZE+1; i++) {
-            if (i == 0) container[rows][i] = atof(strtok(line,","));
-            else container[rows][i] = atof(strtok(NULL,","));
-        }
-        rows++;
-    }
-
-    // Close file
-    fclose (datafile);
-    printf ("File %s closed.\n", argv[1]);
-    
-    // Initialize weights/biases with random values
-    double weights_ih[INPUT_SIZE][HIDDEN_SIZE];
-    double weights_hh[HIDDEN_SIZE][HIDDEN_SIZE2];
-    double weights_ho[HIDDEN_SIZE2][OUTPUT_SIZE];
-
-    double bias_h[HIDDEN_SIZE];
-    double bias_hh[HIDDEN_SIZE2];
-    double bias_o[OUTPUT_SIZE];
+// Randomize weights and biases
+void randomizer (double weights_ih[INPUT_SIZE][HIDDEN_SIZE], double weights_hh[HIDDEN_SIZE][HIDDEN_SIZE2], double weights_hhh[HIDDEN_SIZE2][HIDDEN_SIZE3], double weights_ho[HIDDEN_SIZE3][OUTPUT_SIZE], double bias_h[HIDDEN_SIZE], double bias_hh[HIDDEN_SIZE2], double bias_hhh[HIDDEN_SIZE3], double bias_o[OUTPUT_SIZE]) {
 
     for (int i = 0; i < INPUT_SIZE; i++) {
         for (int j = 0; j < HIDDEN_SIZE; j++) {
@@ -238,55 +208,245 @@ int main (int argc, char **argv) {
     }
 
     for (int i = 0; i < HIDDEN_SIZE2; i++) {
+        for (int j = 0; j < HIDDEN_SIZE3; j++) {
+            weights_hhh[i][j] = frand() - 0.5;
+        }
+        bias_hh[i] = frand() - 0.5;
+    }
+
+    for (int i = 0; i < HIDDEN_SIZE3; i++) {
         for (int j = 0; j < OUTPUT_SIZE; j++) {
             weights_ho[i][j] = frand() - 0.5;
         }
-        bias_hh[i] = frand() - 0.5;
+        bias_hhh[i] = frand() - 0.5;
     }
 
     for (int i = 0; i < OUTPUT_SIZE; i++) {
         bias_o[i] = frand() - 0.5;
     }
+}
+
+// Save weights and biases
+void savemodel (char *model, double weights_ih[INPUT_SIZE][HIDDEN_SIZE], double weights_hh[HIDDEN_SIZE][HIDDEN_SIZE2], double weights_hhh[HIDDEN_SIZE2][HIDDEN_SIZE3], double weights_ho[HIDDEN_SIZE3][OUTPUT_SIZE], double bias_h[HIDDEN_SIZE], double bias_hh[HIDDEN_SIZE2], double bias_hhh[HIDDEN_SIZE3], double bias_o[OUTPUT_SIZE]) {
+
+    FILE *saved_model = fopen (model, "w");
+
+    // Header of the file
+    fprintf (saved_model, "%d %d %d %d %d\n", INPUT_SIZE, HIDDEN_SIZE, HIDDEN_SIZE2, HIDDEN_SIZE3, OUTPUT_SIZE);
+
+    for (int i = 0; i < INPUT_SIZE; i++) {
+        for (int j = 0; j < HIDDEN_SIZE; j++) {
+            fprintf (saved_model, "%lf\n", weights_ih[i][j]);
+        }
+    }
+    for (int i = 0; i < HIDDEN_SIZE; i++) {
+        for (int j = 0; j < HIDDEN_SIZE2; j++) {
+            fprintf (saved_model, "%lf\n", weights_hh[i][j]);
+        }
+    }
+    for (int i = 0; i < HIDDEN_SIZE2; i++) {
+        for (int j = 0; j < HIDDEN_SIZE3; j++) {
+            fprintf (saved_model, "%lf\n", weights_hhh[i][j]);
+        }
+    }
+    for (int i = 0; i < HIDDEN_SIZE3; i++) {
+        for (int j = 0; j < OUTPUT_SIZE; j++) {
+            fprintf (saved_model, "%lf\n", weights_ho[i][j]);
+        }
+    }
+
+    for (int i = 0; i < HIDDEN_SIZE; i++) {
+        fprintf (saved_model, "%lf\n", bias_h[i]);
+    }
+    for (int i = 0; i < HIDDEN_SIZE2; i++) {
+        fprintf (saved_model, "%lf\n", bias_hh[i]);
+    }
+    for (int i = 0; i < HIDDEN_SIZE3; i++) {
+        fprintf (saved_model, "%lf\n", bias_hhh[i]);
+    }
+    for (int i = 0; i < OUTPUT_SIZE; i++) {
+        fprintf (saved_model, "%lf\n", bias_o[i]);
+    }
+
+    fclose (saved_model);
+}
+
+// Load weights and biases
+void readmodel (char *model, double weights_ih[INPUT_SIZE][HIDDEN_SIZE], double weights_hh[HIDDEN_SIZE][HIDDEN_SIZE2], double weights_hhh[HIDDEN_SIZE2][HIDDEN_SIZE3], double weights_ho[HIDDEN_SIZE3][OUTPUT_SIZE], double bias_h[HIDDEN_SIZE], double bias_hh[HIDDEN_SIZE2], double bias_hhh[HIDDEN_SIZE3], double bias_o[OUTPUT_SIZE]) {
+
+    FILE *loaded_model = fopen (model, "r");
+
+    if (!loaded_model) {
+        puts ("Error loading model.");
+    }
+
+    else {
+        fscanf (loaded_model, "%d %d %d %d %d\n", &INPUT_SIZE, &HIDDEN_SIZE, &HIDDEN_SIZE2, &HIDDEN_SIZE3, &OUTPUT_SIZE);
+
+        for (int i = 0; i < INPUT_SIZE; i++) {
+            for (int j = 0; j < HIDDEN_SIZE; j++) {
+                fscanf (loaded_model, "%lf\n", &weights_ih[i][j]);
+            }
+        }
+        for (int i = 0; i < HIDDEN_SIZE; i++) {
+            for (int j = 0; j < HIDDEN_SIZE2; j++) {
+                fscanf (loaded_model, "%lf\n", &weights_hh[i][j]);
+            }
+        }
+        for (int i = 0; i < HIDDEN_SIZE2; i++) {
+            for (int j = 0; j < HIDDEN_SIZE3; j++) {
+                fscanf (loaded_model, "%lf\n", &weights_hhh[i][j]);
+            }
+        }
+        for (int i = 0; i < HIDDEN_SIZE3; i++) {
+            for (int j = 0; j < OUTPUT_SIZE; j++) {
+                fscanf (loaded_model, "%lf\n", &weights_ho[i][j]);
+            }
+        }
+
+        for (int i = 0; i < HIDDEN_SIZE; i++) {
+            fscanf (loaded_model, "%lf\n", &bias_h[i]);
+        }
+        for (int i = 0; i < HIDDEN_SIZE2; i++) {
+            fscanf (loaded_model, "%lf\n", &bias_hh[i]);
+        }
+        for (int i = 0; i < HIDDEN_SIZE3; i++) {
+            fscanf (loaded_model, "%lf\n", &bias_hhh[i]);
+        }
+        for (int i = 0; i < OUTPUT_SIZE; i++) {
+            fscanf (loaded_model, "%lf\n", &bias_o[i]);
+        }
+
+        fclose (loaded_model);
+    }
+}
+
+/* MAIN */
+int main (int argc, char **argv) {
+
+    FILE *datafile = fopen (argv[1], "r");
+
+    if (argc != 11) {
+        puts ("./CCeptron file.csv input_size hidden_size hidden_size2 hidden_size3 output_size epochs learning_rate annealing_rate saved_model");
+        return 1;
+    }
+
+    if (!datafile) {
+        puts ("Data file error.");
+        return 1;
+    }
+
+    FILE *saved_model = fopen (argv[10], "r");
+
+    // Seed random number generator
+    srand(time(0) + getpid());
+
+    // Obtain hyperparameters
+    INPUT_SIZE      = atoi (argv[2]);
+    HIDDEN_SIZE     = atoi (argv[3]);
+    HIDDEN_SIZE2    = atoi (argv[4]);
+    HIDDEN_SIZE3    = atoi (argv[5]);
+    OUTPUT_SIZE     = atoi (argv[6]);
+    EPOCHS          = atoi (argv[7]);
+    LEARNING_RATE   = atof (argv[8]);
+    ANNEALING_RATE  = atof (argv[9]);
+
+    int rows = 0;
+
+    char line[INPUT_SIZE*10];
+
+    // Get line count and reset position on file
+    while (fgets(line, sizeof(line), datafile)!=NULL) {
+        rows++;
+    }
+    rewind (datafile);
+
+    // Container of all the data. Last values are the classes
+    float container[rows][INPUT_SIZE+OUTPUT_SIZE];
+
+    // Reset row counter
+    rows -= rows;
+
+    // Parse lines
+    while (fgets(line, sizeof(line), datafile)) {
+
+        for (int i = 0; i<INPUT_SIZE+OUTPUT_SIZE; i++) {
+            if (i == 0) container[rows][i] = atof(strtok(line,","));
+            else container[rows][i] = atof(strtok(NULL,","));
+        }
+        rows++;
+    }
 
     // Store classes separately
-    // TODO: more than 1 class
     double targets[rows][OUTPUT_SIZE];
     for (int row = 0; row<rows; row++) {
-        for (int i = 0; i < OUTPUT_SIZE; i++) {
-            targets[row][i] = container[row][INPUT_SIZE + i];
+        for (int class = 0; class < OUTPUT_SIZE; class++) {
+            targets[row][class] = container[row][INPUT_SIZE + class];
         }
     }
 
-    /* TRAINING */
-    printf("Training for %d epochs.\n", EPOCHS);
-    for (int epoch = 0; epoch < EPOCHS; epoch++) {
-        if (epoch % 100 == 0) {
-            printf("Epoch %d/%d\n", epoch, EPOCHS);
-        }
-        for (int row = 0; row < rows; row++) {
+    // Close file
+    fclose (datafile);
 
-            // Pick random row to train on
-            int selected_row = randrange(0, rows-1);
+    double weights_ih[INPUT_SIZE][HIDDEN_SIZE];
+    double weights_hh[HIDDEN_SIZE][HIDDEN_SIZE2];
+    double weights_hhh[HIDDEN_SIZE2][HIDDEN_SIZE3];
+    double weights_ho[HIDDEN_SIZE3][OUTPUT_SIZE];
+    double bias_h[HIDDEN_SIZE];
+    double bias_hh[HIDDEN_SIZE2];
+    double bias_hhh[HIDDEN_SIZE3];
+    double bias_o[OUTPUT_SIZE];
 
-            // Store parameters
-            double input[INPUT_SIZE];
-            for (int j = 0; j < INPUT_SIZE; j++) {
-                input[j] = container[selected_row][j];
+    // Save weights and biases in a file if it doesn't exist
+    if (!saved_model) {
+
+        /* RANDOMIZE WEIGHTS AND BIASES */
+        randomizer(weights_ih, weights_hh, weights_hhh, weights_ho, bias_h, bias_hh, bias_hhh, bias_o);
+
+        /* TRAINING */
+        printf("Training for %d epochs.\n", EPOCHS);
+        for (int epoch = 0; epoch < EPOCHS; epoch++) {
+            for (int row = 0; row < rows; row++) {
+
+                // Pick random row to train on
+                int selected_row = randrange(0, rows-1);
+
+                // Store data parameters
+                double input[INPUT_SIZE];
+                for (int j = 0; j < INPUT_SIZE; j++) {
+                    input[j] = container[selected_row][j];
+                }
+
+                double hidden   [HIDDEN_SIZE];
+                double hidden2  [HIDDEN_SIZE2];
+                double hidden3  [HIDDEN_SIZE3];
+                double output   [OUTPUT_SIZE];
+
+                forwardpropagation(input, weights_ih, weights_hh, weights_hhh, weights_ho, hidden, hidden2, hidden3, output, bias_h, bias_hh, bias_hhh, bias_o);
+
+                backpropagation(input, hidden, hidden2, hidden3, output, targets[selected_row], weights_ih, weights_hh, weights_hhh, weights_ho, bias_h, bias_hh, bias_hhh, bias_o);
             }
 
-            double hidden[HIDDEN_SIZE];
-            double hidden2[HIDDEN_SIZE2];
-            double output[OUTPUT_SIZE];
+            if (epoch % 100 == 0) {
+                printf("Epoch %d/%d\n", epoch, EPOCHS);
+            }
 
-            forwardpropagation(input, weights_ih, weights_hh, weights_ho, hidden, hidden2, output, bias_h, bias_hh, bias_o);
-            backwardpropagation(input, hidden, hidden2, output, targets[selected_row], weights_ih, weights_hh, weights_ho, bias_h, bias_hh, bias_o);
+            // Progressively lowering the learning rate
+            LEARNING_RATE *= ANNEALING_RATE;
         }
-        LEARNING_RATE *= ANNEALING_RATE;
+
+        /* SAVE WEIGHTS AND BIASES */
+        savemodel(argv[10], weights_ih, weights_hh, weights_hhh, weights_ho, bias_h, bias_hh, bias_hhh, bias_o);
+
     }
 
-    /* TESTING
-     * TODO: use another dataset for testing
-     */
+    // Load weights and biases if a saved model exists
+    else {
+        printf ("Reading weights and biases from %s.\n", argv[10]);
+        readmodel (argv[10], weights_ih, weights_hh, weights_hhh, weights_ho, bias_h, bias_hh, bias_hhh, bias_o);
+    }
+
+    /* TESTING */
     for (int row = 0; row < rows; row++) {
 
         // Pick random row to test
@@ -297,14 +457,17 @@ int main (int argc, char **argv) {
             input[j] = container[selected_row][j];
         }
 
-        double hidden[HIDDEN_SIZE];
-        double hidden2[HIDDEN_SIZE2];
-        double output[OUTPUT_SIZE];
-        forwardpropagation(input, weights_ih, weights_hh, weights_ho, hidden, hidden2, output, bias_h, bias_hh, bias_o);
+        double hidden   [HIDDEN_SIZE];
+        double hidden2  [HIDDEN_SIZE2];
+        double hidden3  [HIDDEN_SIZE3];
+        double output   [OUTPUT_SIZE];
+
+        forwardpropagation(input, weights_ih, weights_hh, weights_hhh, weights_ho, hidden, hidden2, hidden3, output, bias_h, bias_hh, bias_hhh, bias_o);
 
         for (int i = 0; i < OUTPUT_SIZE; i++) {
-            printf("Output: %.2lf, Target: %.2lf, Accuracy: %.2f%%\n", output[i], targets[selected_row][i], 100 - fabs(output[i] - targets[selected_row][i])*100);
+            printf("Output: %.2lf Target: %.2lf: %.2f%%\n", output[i], targets[selected_row][i], 100 - fabs(output[i] - targets[selected_row][i])*100);
         }
+        printf ("------\n");
     }
 
     return 0;
