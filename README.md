@@ -8,19 +8,23 @@ The entire code is a single C file. The program admits CSV files as data and all
 git clone 'https://github.com/DarkAdin/CCeptron.git'
 cd CCeptron
 make
-./CCeptron file.csv input_size hidden_size hidden_size2 output_size epochs learning_rate annealing_rate
 ```
-
 This will compile the program with the appropiate flags. Set
 ```{language=bash}
 DEBUG = 1
 ```
-
 in the *Makefile* if you wish to use it with a debugger.
+
+Then, use it as follows:
+```{language=bash}
+./CCeptron file.csv input_size hidden_size hidden_size2 output_size epochs learning_rate annealing_rate saved_model
+```
+
+That will train the network on the data and save all weights and biases in a file. If the file already exists, the program skips the training part and directly predicts on the data.
 
 ![](neuralnetwork.png "Default neural network")
 
-The network comes with two hidden layers and one output layer by default. The two hidden layers use *SELU* as the activation function and the output layer uses *sigmoid*.
+The network comes with three hidden layers and one output layer by default. The three hidden layers use *leaky RELU* as the activation function and the output layer uses *sigmoid*.
 
 In the image above, we can see an idea of such network:
 
@@ -39,7 +43,7 @@ The random number generator is seeded with the current time and the process ID.
 
 In every iteration, CCeptron trains on a randomly picked row of the training data set, and does the same in every iteration of the testing stage, so it does not need to shuffle the training data and/or the testing data.
 
-The learning rate is updated every epoch by the annealing rate.
+The learning rate is updated every epoch by the annealing rate. It uses gradient descent as the training scheme.
 
 ## Example of valid data
 
@@ -59,6 +63,19 @@ If we wanted to train on this data, we should specify 4 as the input size and 1 
 
 The class is encoded in the form of a number as well. If we have 3 different species in the *iris* dataset, an example of encoding them could be *0.0*, *0.5* and *1.0*. The maximum number of decimals in a data point should be 6.
 
+Another way of encoding classes could be
+```
+0.645569,0.795454,0.202898,0.08,1,0,0
+```
+Where the last three digits signify the class. Thus, if we have three classes, they could be encoded as
+```
+...,1,0,0 # First class
+...,0,1,0 # Second class
+...,0,0,1 # Third class
+```
+
+Remember to normalize every column by its maximum value so everything falls between the 0-1 range.
+
 ## Inspirations
 
 CCeptron is a minimalistic approach to a simple neural network concept, [the perceptron](https://en.wikipedia.org/wiki/Perceptron). As such, it is not a fully capable neural network. But it should be easily modifiable to suit general needs and make predictions on small-to-medium complexity data. Check out these amazing machine learning projects in C which heavily inspired CCeptron:
@@ -72,6 +89,6 @@ CCeptron is a minimalistic approach to a simple neural network concept, [the per
 
 These things will be added in the future:
 
+* ~~Save all weights and biases of the network to make future predictions~~
 * Set a way to read a separate testing set in order to do the testing
-* Save all weights and biases of the network to make future predictions
 * Multi-threading
