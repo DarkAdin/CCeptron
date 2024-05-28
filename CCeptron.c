@@ -4,18 +4,19 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include <limits.h>
 
 int INPUT_SIZE, HIDDEN_SIZE, HIDDEN_SIZE2, HIDDEN_SIZE3, OUTPUT_SIZE, EPOCHS;
-double LEARNING_RATE, ANNEALING_RATE;
+float LEARNING_RATE, ANNEALING_RATE;
 
 /* ERROR FUNCTIONS */
-double error (double prediction, double target) {
+double huber (double prediction, double target) {
     double delta = 1.35;
     // HUBER LOSS
     if (fabs(prediction-target) < delta) return 0.5 * (prediction-target) * (prediction-target);
     else return (delta * fabs(prediction-target) - 0.5 * delta * delta);
 }
-double derror (double prediction, double target) {
+double dhuber (double prediction, double target) {
     double delta = 1.35;
     // HUBER LOSS
     if (fabs(prediction-target) < delta) return prediction-target;
@@ -30,7 +31,16 @@ double derror (double prediction, double target) {
     }
 }
 
-/* ACTIVATION FUNCTIONS */
+/* MSE */
+double mse (double prediction, double target) {
+    return (prediction - target) * (prediction - target);
+}
+
+double dmse (double prediction, double target) {
+    return (prediction - target);
+}
+
+/*----------------ACTIVATION FUNCTIONS---------------------*/
 // Sigmoid
 double sigmoid ( double a ) {
     return 1 / (1 + expf(-a));
@@ -71,18 +81,50 @@ double softplus ( double a ) {
 double dsoftplus ( double a ) {
     return 1 / (1 + expf(-a));
 }
+/*---------------------------------------------------------*/
 
+/*---------------MAKE YOUR CHOICES HERE----------------------*/
+typedef double (*hiddenfunc1ptr)(double);
+typedef double (*hiddenfunc2ptr)(double);
+typedef double (*hiddenfunc3ptr)(double);
+typedef double (*outputfuncptr)(double);
+
+typedef double (*dhiddenfunc1ptr)(double);
+typedef double (*dhiddenfunc2ptr)(double);
+typedef double (*dhiddenfunc3ptr)(double);
+typedef double (*doutputfuncptr)(double);
+
+typedef double (*errorptr)(double,double);
+typedef double (*derrorptr)(double,double);
+
+// DEFINE FUNCTIONS!
+hiddenfunc1ptr hiddenfunc1 = lrelu;
+hiddenfunc2ptr hiddenfunc2 = lrelu;
+hiddenfunc3ptr hiddenfunc3 = lrelu;
+outputfuncptr outputfunc = sigmoid;
+
+dhiddenfunc1ptr dhiddenfunc1 = dlrelu;
+dhiddenfunc2ptr dhiddenfunc2 = dlrelu;
+dhiddenfunc3ptr dhiddenfunc3 = dlrelu;
+doutputfuncptr  doutputfunc = dsigmoid;
+
+errorptr error = huber;
+derrorptr derror = dhuber;
+/*---------------------------------------------------*/
+
+/*---------------MISCELANEOUS FUNCTIONS--------------*/
 // Return a random int in a specified range
 int randrange (int min, int max) {
     return rand() % (max-min+1) + min;
 }
 
-// Get a float between -0.5 and 0-5
+// Get a float between -0.5 and 0.5
 double frand () {
     return (double) rand() / (double) RAND_MAX - 0.5;
 }
+/*---------------------------------------------------*/
 
-/* FORWARD PROPAGATION */
+/*--------------FORWARD PROPAGATION-------------------*/
 void forwardpropagation (double *input, double **weights_ih, double **weights_hh, double **weights_hhh, double **weights_ho, double *hidden, double *hidden2, double *hidden3, double *output, double *bias_h, double *bias_hh, double *bias_hhh, double *bias_o) {
 
     // Calculate hidden layer values
@@ -92,7 +134,7 @@ void forwardpropagation (double *input, double **weights_ih, double **weights_hh
             hidden[i] += input[j] * weights_ih[j][i];
         }
         hidden[i] += bias_h[i];
-        hidden[i] = lrelu(hidden[i]);
+        hidden[i] = hiddenfunc1(hidden[i]);
     }
 
     // Calculate hidden2 layer values
@@ -102,7 +144,7 @@ void forwardpropagation (double *input, double **weights_ih, double **weights_hh
             hidden2[i] += hidden[j] * weights_hh[j][i];
         }
         hidden2[i] += bias_hh[i];
-        hidden2[i] = lrelu(hidden2[i]);
+        hidden2[i] = hiddenfunc2(hidden2[i]);
     }
 
     // Calculate hidden3 layer values
@@ -112,7 +154,7 @@ void forwardpropagation (double *input, double **weights_ih, double **weights_hh
             hidden3[i] += hidden2[j] * weights_hhh[j][i];
         }
         hidden3[i] += bias_hhh[i];
-        hidden3[i] = relu(hidden3[i]);
+        hidden3[i] = hiddenfunc3(hidden3[i]);
     }
 
     // Calculate output layer values
@@ -122,11 +164,12 @@ void forwardpropagation (double *input, double **weights_ih, double **weights_hh
             output[i] += hidden3[j] * weights_ho[j][i];
         }
         output[i] += bias_o[i];
-        output[i] = tanh(output[i]);
+        output[i] = outputfunc(output[i]);
     }
 }
+/*----------------------------------------------------*/
 
-/* BACKPROPAGATION */
+/*-----------BACKPROPAGATION-----------------*/
 double backpropagation (double *input, double *hidden, double *hidden2, double *hidden3, double *output, double *target, double **weights_ih, double **weights_hh, double **weights_hhh, double **weights_ho, double *bias_h, double *bias_hh, double *bias_hhh, double *bias_o) {
 
     double output_error =                 0;               // Error to be reported
@@ -144,7 +187,7 @@ double backpropagation (double *input, double *hidden, double *hidden2, double *
     for (int i = 0; i < OUTPUT_SIZE; i++) {
         output_error += error (target[i], output[i]);   // Store error of this iteration
 
-        output_gradients[i] = derror (target[i], output[i]) * dtanh (output[i]);
+        output_gradients[i] = derror (target[i], output[i]) * doutputfunc (output[i]);
         bias_o[i] += LEARNING_RATE * output_gradients[i];
     }
 
@@ -154,7 +197,7 @@ double backpropagation (double *input, double *hidden, double *hidden2, double *
             weights_ho[i][j] += LEARNING_RATE * output_gradients[j] * hidden3[i];
             hidden3_errors[i] += output_gradients[j] * weights_ho[i][j];
         }
-        hidden3_gradients[i] = hidden3_errors[i] * drelu(hidden3[i]);
+        hidden3_gradients[i] = hidden3_errors[i] * dhiddenfunc3(hidden3[i]);
         bias_hhh[i] += LEARNING_RATE * hidden3_gradients[i];
     }
 
@@ -164,7 +207,7 @@ double backpropagation (double *input, double *hidden, double *hidden2, double *
             weights_hhh[i][j] += LEARNING_RATE * hidden3_gradients[j] * hidden2[i];
             hidden2_errors[i] += hidden3_gradients[j] * weights_hhh[i][j];
         }
-        hidden2_gradients[i] = hidden2_errors[i] * dlrelu(hidden2[i]);
+        hidden2_gradients[i] = hidden2_errors[i] * dhiddenfunc2(hidden2[i]);
         bias_hh[i] += LEARNING_RATE * hidden2_gradients[i];
     }
 
@@ -174,7 +217,7 @@ double backpropagation (double *input, double *hidden, double *hidden2, double *
             weights_hh[i][j] += LEARNING_RATE * hidden2_gradients[j] * hidden[i];
             hidden_errors[i] += hidden2_gradients[j] * weights_hh[i][j];
         }
-        hidden_gradients[i] = hidden_errors[i] * dlrelu(hidden[i]);
+        hidden_gradients[i] = hidden_errors[i] * dhiddenfunc1(hidden[i]);
         bias_h[i] += LEARNING_RATE * hidden_gradients[i];
     }
 
@@ -187,6 +230,7 @@ double backpropagation (double *input, double *hidden, double *hidden2, double *
     // Return the average error of this iteration
     return output_error / OUTPUT_SIZE;
 }
+/*-------------------------------------------*/
 
 // Randomize weights and biases
 void randomizer (double **weights_ih, double **weights_hh, double **weights_hhh, double **weights_ho, double *bias_h, double *bias_hh, double *bias_hhh, double *bias_o) {
@@ -312,7 +356,7 @@ void readmodel (char *model, double **weights_ih, double **weights_hh, double **
 int main (int argc, char **argv) {
 
     if (argc != 11) {
-        puts ("./CCeptron file.csv input_size hidden_size hidden_size2 hidden_size3 output_size epochs learning_rate annealing_rate saved_model");
+        puts ("./CCeptron file.csv input_size hidden_size hidden_size2 hidden_size3 output_size epochs learning_rate annealing_rate saved_model norm (optional)");
         return 1;
     }
 
@@ -439,7 +483,8 @@ int main (int argc, char **argv) {
 
             //Report error every 20 epochs
             if (epoch % 20 == 0) {
-                printf("\rEpoch %d/%d -- Error: %.6lf, Rate: %lf", epoch, EPOCHS, iteration_error[epoch], LEARNING_RATE);
+                //printf("\rEpoch %d/%d -- Error: %.6lf, Rate: %lf", epoch, EPOCHS, iteration_error[epoch], LEARNING_RATE);
+                printf("\rEpoch %d/%d -- Error: %.6lf, Rate: %f", epoch, EPOCHS, iteration_error[epoch], LEARNING_RATE);
                 fflush(stdout);
             }
 
