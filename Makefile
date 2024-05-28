@@ -3,12 +3,12 @@ DEBUG = 0
 CC = gcc
 
 ifeq ($(DEBUG), 1)
-	CFLAGS = -Og -g
+	CFLAGS = -Og -g3
 else
-	CFLAGS = -Wall -Wextra -Ofast
+    CFLAGS = -Wall -Wextra -Ofast -funroll-loops
 endif
 
 LDFLAGS = -lm
 
-test:
+all:
 	$(CC) -o CCeptron CCeptron.c $(CFLAGS) $(LDFLAGS)
