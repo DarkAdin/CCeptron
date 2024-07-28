@@ -81,7 +81,13 @@ Where the last three digits signify the class. Thus, if we have three classes, t
 ...,0,0,1 # Third class
 ```
 
-Remember to normalize your data by column.
+```
+./CCeptron iris.csv 4 20 20 20 3 2000 0.001 0.999 iris_output
+```
+
+would train a network of 4 input neurons (since we have 4 parameters), followed by three hidden layers with 20 neurons each, and finally an output layer with 3 neurons (since we have 3 classes), with a starting learning rate of $0.001$ and an annealing rate of $0.999$, saving the errors in a file called *iris_output*.
+
+**Remember to normalize your data!**
 
 The error of every epoch is saved in a file called _savederrors_ by default, so it is easier to plot it with your favorite plotting software after every training session.
 
