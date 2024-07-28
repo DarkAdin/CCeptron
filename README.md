@@ -9,7 +9,7 @@ git clone 'https://github.com/DarkAdin/CCeptron.git'
 cd CCeptron
 make
 ```
-This will compile the program with the appropiate flags. Set
+This will compile the program with the appropriate flags. Set
 ```{language=bash}
 DEBUG = 1
 ```
@@ -24,7 +24,7 @@ That will train the network on the data and save all weights and biases in a fil
 
 ![](neuralnetwork.png "Default neural network")
 
-The network comes with three hidden layers and one output layer by default. The three hidden layers use *leaky RELU* as the activation function and the output layer uses *sigmoid*.
+The network comes with three hidden layers and one output layer by default. The three hidden layers use *GELU* as the activation function and the output layer uses *sigmoid*.
 
 In the image above, we can see an idea of such network:
 
