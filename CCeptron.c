@@ -454,7 +454,9 @@ int main (int argc, char **argv) {
     free(line);
 
     // Values
-    double input[rows][INPUT_SIZE];
+    //double input[rows][INPUT_SIZE];
+    double **input = malloc ( sizeof (double*) * rows );
+    for (int i = 0; i < rows; i++) input[i] = malloc ( sizeof(double) * INPUT_SIZE );
     double hidden[HIDDEN_SIZE];
     double hidden2[HIDDEN_SIZE2];
     double hidden3[HIDDEN_SIZE3];
@@ -586,8 +588,10 @@ int main (int argc, char **argv) {
     // Free memory
     for (int row = 0; row < rows; row++) {
         free(container[row]);
+        free(input[row]);
     }
     free (container);
+    free (input);
 
     return 0;
 }
