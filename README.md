@@ -102,6 +102,8 @@ CCeptron is a minimalistic approach to a simple neural network concept, [the per
 * [genann](https://github.com/codeplea/genann)
 * [kann](https://github.com/attractivechaos/kann): very complete project for constructing small to medium neural networks.
 
+CCeptron is **CPU only** and as of yet, **does not support multi-threading**. As such, it will not be a good option for very large, or very complex data.
+
 ## TO-DO
 
 These things will be added in the future:
