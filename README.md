@@ -87,7 +87,7 @@ As an example,
 ./CCeptron iris.csv 4 20 20 20 3 2000 0.001 0.999 iris_output
 ```
 
-would train a network of 4 input neurons (since we have 4 parameters), followed by three hidden layers with 20 neurons each, and finally an output layer with 3 neurons (since we have 3 classes), with a starting learning rate of $0.001$ and an annealing rate of $0.999$, saving the model in a plain text file called *iris_output*. This file contains the main architecture of the recently trained network, and using it again as a parameter, if it already exists, will cause it to be used to test on the data without training. This way, once trained, a saved model can immediately be used to test on other data. **Caveat**: excluding the input data, the rest of hyperparameters must remain the same.
+would train a network of 4 input neurons (since we have 4 parameters), followed by three hidden layers with 20 neurons each, and finally an output layer with 3 neurons (since we have 3 classes) for $2000$ epochs, with a starting learning rate of $0.001$ and an annealing rate of $0.999$, saving the model in a plain text file called *iris_output*. This file contains the main architecture of the recently trained network, and using it again as a parameter, if it already exists, will cause it to be used to test on the data without training. This way, once trained, a saved model can immediately be used to test on other data. **Caveat**: excluding the input data, the rest of hyperparameters must remain the same.
 
 **Remember to normalize your data!**
 
