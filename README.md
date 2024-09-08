@@ -93,6 +93,20 @@ would train a network of 4 input neurons (since we have 4 parameters), followed 
 
 The error of every epoch is saved in a file called _savederrors_ by default, so it is easier to plot it with your favorite plotting software after every training session.
 
+### Example output
+
+![](training.png "Training process")
+
+In the image above, we are training the network on the **normalized** iris dataset (dividing each value by the maximum value of that parameter) and encoding the classes in a ```1,0,0``` manner. Thus, we train the network on 4 parameters, with 3 hidden layers of 20 neurons each, and an output layer of 3 neurons (since we have 3 classes), for 2000 epochs, with a learning rate of 0.001 and an annealing rate of 0.999, saving the weights and biases and the architecthure in a file called *flowers*. The error towards the final epochs is minimal, as can be seen.
+
+![](testing.png "Testing process")
+
+After the training process, the network performs one iteration of forward propagation in order to predict in the testing phase. Above can be seen a fraction of the output that results from this process.
+
+![](error.png "Error function through the epochs")
+
+In the image above the error function through the epochs can be seen.
+
 ## Inspirations
 
 CCeptron is a minimalistic approach to a simple neural network concept, [the perceptron](https://en.wikipedia.org/wiki/Perceptron). As such, it is not a fully capable neural network. But it should be easily modifiable to suit general needs and make predictions on small-to-medium complexity data. Check out these amazing machine learning projects in C which heavily inspired CCeptron:
