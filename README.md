@@ -46,7 +46,7 @@ Once all training epochs have passed, the network tests itself on the training d
 
 The random number generator is seeded with the current time and the current process ID.
 
-In every iteration, CCeptron trains on a randomly picked row of the training data set, and does the same in every iteration of the testing stage, so it does not need to shuffle the training data and/or the testing data.
+Remember to shuffle your training data appropriately.
 
 The learning rate is updated every epoch by the annealing rate. It uses gradient descent as the training scheme.
 
