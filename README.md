@@ -105,7 +105,11 @@ After the training process, the network performs one iteration of forward propag
 
 ![](error.png "Error function through the epochs")
 
-In the image above the error function through the epochs can be seen.
+In the image above the error function through the epochs can be seen for the normalized **iris dataset** with the following invocation:
+
+```
+./CCeptron iris.data 4 30 30 30 3 2000 0.001 0.999 flowers
+```
 
 ## Inspirations
 
