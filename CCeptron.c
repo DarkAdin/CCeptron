@@ -65,31 +65,28 @@ typedef double (*derrorptr)       (double, double);
  * ERROR FUNCTIONS *
  *******************/
 // HUBER LOSS
+//      Smaller deltas such as 0.5 give robustness against many outliers
+//      Good normal deltas are for example 1.0, 1.35, 1.5
 double huber (double prediction, double target) {
-    double delta = 1.35;
+    double delta = 1.5;
     if (fabs(prediction-target) <= delta) {
-        return 0.5 * (prediction-target) * (prediction-target);
+        return 0.5 * ((prediction-target) * (prediction-target));
     }
-    return (delta * fabs(prediction-target) - 0.5 * (delta * delta));
+    else return delta * (fabs(prediction-target) - 0.5 * delta);
 }
 double dhuber (double prediction, double target) {
-    double delta = 1.35;
-    if (fabs(prediction-target) < delta) {
-        return prediction-target;
+    double delta = 1.5;
+    if (fabs(prediction-target) <= delta) return prediction-target;
+    else {
+        if (prediction-target > delta) return delta;
+        else return -delta;
     }
-    // Negatives
-    if (prediction-target < 0.0) return -delta;
-    // Positives
-    else if (prediction-target > 0.0) return delta;
-    // Zero
-    else return 0.0;
 }
 
-//MSE
+// MSE
 double mse (double prediction, double target) {
     return (prediction - target) * (prediction - target);
 }
-
 double dmse (double prediction, double target) {
     return 2.0 * (prediction - target);
 }
@@ -127,7 +124,7 @@ double lrelu ( double a ) {
 }
 double dlrelu ( double a ) {
     if (a < 0.0) return a;
-    else return 1;
+    else return 1.0;
 }
 
 // GELU
@@ -164,10 +161,10 @@ dhiddenfunc3ptr dhiddenfunc3 = dgelu;
 doutputfuncptr  doutputfunc  = dsigmoid;
 
 // Error function and its derivative
-//errorptr error = huber;
-//derrorptr derror = dhuber;
-errorptr error = mse;
-derrorptr derror = dmse;
+errorptr error = huber;
+derrorptr derror = dhuber;
+//errorptr error = mse;
+//derrorptr derror = dmse;
 
 /***************************
  * MISCELLANEOUS FUNCTIONS *
@@ -246,6 +243,7 @@ double backpropagation (architechture network) {
     double hidden_gradients  [network.h_size];
 
     for (int i = 0; i < network.o_size; i++) {
+
         // Store error of this iteration
         output_error += error (network.targets[i], network.output[i]);
 
@@ -290,6 +288,7 @@ double backpropagation (architechture network) {
     }
 
     // Return the average error of this iteration
+    //printf ("%lf\t%lf\t%d\n", output_error/network.o_size, output_error, network.o_size);
     return output_error / network.o_size;
 }
 
@@ -307,26 +306,26 @@ void randomizer (architechture network) {
     for (int i = 0; i < network.h_size; i++) {
         for (int j = 0; j < network.hh_size; j++) {
             network.weights_hh[i][j] = frand();
-            network.bias_h[i] = frand();
+            network.bias_h[i] = 0;
         }
     }
 
     for (int i = 0; i < network.hh_size; i++) {
         for (int j = 0; j < network.hhh_size; j++) {
             network.weights_hhh[i][j] = frand();
-            network.bias_hh[i] = frand();
+            network.bias_hh[i] = 0;
         }
     }
 
     for (int i = 0; i < network.hhh_size; i++) {
         for (int j = 0; j < network.o_size; j++) {
             network.weights_ho[i][j] = frand();
-            network.bias_hhh[i] = frand();
+            network.bias_hhh[i] = 0;
         }
     }
 
     for (int i = 0; i < network.o_size; i++) {
-        network.bias_o[i] = frand();
+        network.bias_o[i] = 0;
     }
 }
 
@@ -511,14 +510,14 @@ int main (int argc, char **argv) {
     network.output = malloc (sizeof(double) * network.o_size);
 
     // Weights
-    network.weights_ih = malloc(sizeof(double*) * network.i_size);
-    for (int i = 0; i < network.i_size; i++) network.weights_ih[i] = malloc(sizeof(double) * network.h_size);
-    network.weights_hh = malloc(sizeof(double*) * network.h_size);
-    for (int i = 0; i < network.h_size; i++) network.weights_hh[i] = malloc(sizeof(double) * network.hh_size);
-    network.weights_hhh = malloc(sizeof(double*) * network.hh_size);
-    for (int i = 0; i < network.hh_size; i++) network.weights_hhh[i] = malloc(sizeof(double) * network.hhh_size);
-    network.weights_ho = malloc(sizeof(double*) * network.hhh_size);
-    for (int i = 0; i < network.hhh_size; i++) network.weights_ho[i] = malloc(sizeof(double) * network.o_size);
+    network.weights_ih  = malloc ( sizeof(double*) * network.i_size   );
+    network.weights_hh  = malloc ( sizeof(double*) * network.h_size   );
+    network.weights_hhh = malloc ( sizeof(double*) * network.hh_size  );
+    network.weights_ho  = malloc ( sizeof(double*) * network.hhh_size );
+    for (int i = 0; i < network.i_size; i++)   network.weights_ih[i]  = malloc(sizeof(double) * network.h_size   );
+    for (int i = 0; i < network.h_size; i++)   network.weights_hh[i]  = malloc(sizeof(double) * network.hh_size  );
+    for (int i = 0; i < network.hh_size; i++)  network.weights_hhh[i] = malloc(sizeof(double) * network.hhh_size );
+    for (int i = 0; i < network.hhh_size; i++) network.weights_ho[i]  = malloc(sizeof(double) * network.o_size   );
 
     network.bias_h = malloc(sizeof(double) * network.h_size);
     network.bias_hh = malloc(sizeof(double) * network.hh_size);
@@ -543,10 +542,13 @@ int main (int argc, char **argv) {
         FILE *saved_errors = fopen ("savederrors", "w");
 
         for (int epoch = 0; epoch < network.epochs; epoch++) {
+
             for (int row = 0; row < rows; row++) {
 
-                // Pick random row to train on
-                int selected_row = randrange(0, rows-1);
+                // Pick random row to train on (deactivated for now)
+                //int selected_row = randrange(0, rows-1);
+
+                int selected_row = row;
 
                 for (int j = 0; j < network.i_size; j++) {
                     // The random row to train on
@@ -596,21 +598,24 @@ int main (int argc, char **argv) {
     for (int row = 0; row < rows; row++) {
 
         // Pick random row to test
-        int selected_row = randrange (0, rows-1);
+        //int selected_row = randrange (0, rows-1);
 
         for (int j = 0; j < network.i_size; j++) {
-            input[row][j] = container[selected_row][j];
+            //input[row][j] = container[selected_row][j];
+            input[row][j] = container[row][j];
         }
         
         network.input = input[row];
-        network.targets = targets[selected_row];
+        //network.targets = targets[selected_row];
+        network.targets = targets[row];
 
         // Forwardpropagation: testing
         forwardpropagation(network);
 
         printf("\n");
         for (int i = 0; i < network.o_size; i++) {
-            printf("Output: %.4lf Target: %.4lf: %.2f%%\n", network.output[i], targets[selected_row][i], 100 - fabs(network.output[i] - targets[selected_row][i])*100);
+            //printf("Output: %.4lf Target: %.4lf: %.2f%%\n", network.output[i], targets[selected_row][i], 100 - fabs(network.output[i] - targets[selected_row][i])*100);
+            printf("Output: %.4lf Target: %.4lf: %.2f%%\n", network.output[i], targets[row][i], 100 - fabs(network.output[i] - targets[row][i])*100);
         }
         printf ("------\n");
     }
@@ -622,8 +627,8 @@ int main (int argc, char **argv) {
         free(container[row]);
         free(input[row]);
     }
-    free (container);
-    free (input);
+    free(container);
+    free(input);
 
     for (int i = 0; i < network.i_size; i++) free(network.weights_ih[i]);
     free(network.weights_ih);
