@@ -17,7 +17,7 @@ in the *Makefile* if you wish to use it with a debugger.
 
 Then, use it as follows:
 ```{language=bash}
-./CCeptron file.csv input_size hidden_size hidden_size2 output_size epochs learning_rate annealing_rate saved_model
+./CCeptron file.csv input_size hidden_size hidden_size2 hidden_size3 output_size epochs learning_rate annealing_rate saved_model
 ```
 
 That will train the network on the data and save all weights and biases in a file. If the file already exists, the program skips the training part and directly predicts on the data.
