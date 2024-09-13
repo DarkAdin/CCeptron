@@ -81,6 +81,12 @@ Where the last three digits signify the class. Thus, if we have three classes, t
 ...,0,0,1 # Third class
 ```
 
+In other words, we would have
+
+| Sepal length | Sepal width | Petal length | Petal width | Class 1 | Class 2 | Class 3 |
+|--------------|-------------|--------------|-------------|---------|---------|---------|
+| 0.65         | 0.79        | 0.20         | 0.08        | 1       | 0       | 0       |
+
 As an example,
 
 ```
