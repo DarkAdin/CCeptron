@@ -5,23 +5,24 @@
 #include <math.h>
 #include <string.h>
 
-/**************************************************
- * STRUCTURE TO CONTAIN THE NETWORK ARCHITECHTURE *
- **************************************************/
+/******************************
+ *    STRUCTURE TO CONTAIN    *
+ * THE NETWORK ARCHITECHTURE  *
+ ******************************/
 typedef struct {
     // Epochs
-    int epochs;
+    unsigned short epochs;
 
     // Hyper-parameters
     double learning_rate;
     double annealing_rate;
 
     // Sizes
-    int i_size;
-    int h_size;
-    int hh_size;
-    int hhh_size;
-    int o_size;
+    unsigned short i_size;
+    unsigned short h_size;
+    unsigned short hh_size;
+    unsigned short hhh_size;
+    unsigned short o_size;
 
     // Values
     double *input;
@@ -68,18 +69,18 @@ typedef double (*derrorptr)       (double, double);
 //      Smaller deltas such as 0.5 give robustness against many outliers
 //      Good normal deltas are for example 1.0, 1.35, 1.5
 double huber (double prediction, double target) {
-    double delta = 1.5;
+    double delta = 1.35;
     if (fabs(prediction-target) <= delta) {
         return 0.5 * ((prediction-target) * (prediction-target));
     }
-    else return delta * (fabs(prediction-target) - 0.5 * delta);
+    return delta * (fabs(prediction-target) - 0.5 * delta);
 }
 double dhuber (double prediction, double target) {
-    double delta = 1.5;
+    double delta = 1.35;
     if (fabs(prediction-target) <= delta) return prediction-target;
     else {
         if (prediction-target > delta) return delta;
-        else return -delta;
+        return -delta;
     }
 }
 
@@ -110,21 +111,35 @@ double dtanh ( double a ) {
 // RELU
 double relu ( double a ) {
     if (a < 0.0) return 0.0;
-    else return a;
+    return a;
 }
 double drelu ( double a ) {
     if (a < 0.0) return 0.0;
-    else return 1.0;
+    return 1.0;
 }
 
 // Leaky RELU
 double lrelu ( double a ) {
     if (a < 0.0) return 0.01 * a;
-    else return a;
+    return a;
 }
 double dlrelu ( double a ) {
     if (a < 0.0) return a;
-    else return 1.0;
+    return 1.0;
+}
+
+// SELU
+double selu ( double a ) {
+    double alpha = 1.6733;
+    double lambda = 1.0507;
+    if (a < 0.0) return lambda*alpha*(expf(a) - 1.0);
+    return lambda*a;
+}
+double dselu ( double a ) {
+    double alpha = 1.6733;
+    double lambda = 1.0507;
+    if (a < 0.0) return lambda*alpha*expf(a);
+    return lambda;
 }
 
 // GELU
@@ -149,15 +164,15 @@ double dsoftplus ( double a ) {
  * SELECT YOUR FUNCTIONS HERE *
  ******************************/
 // Activation functions
-hiddenfunc1ptr hiddenfunc1 = gelu;
-hiddenfunc2ptr hiddenfunc2 = gelu;
-hiddenfunc3ptr hiddenfunc3 = gelu;
+hiddenfunc1ptr hiddenfunc1 = selu;
+hiddenfunc2ptr hiddenfunc2 = selu;
+hiddenfunc3ptr hiddenfunc3 = selu;
 outputfuncptr  outputfunc  = sigmoid;
 
 // Their derivatives
-dhiddenfunc1ptr dhiddenfunc1 = dgelu;
-dhiddenfunc2ptr dhiddenfunc2 = dgelu;
-dhiddenfunc3ptr dhiddenfunc3 = dgelu;
+dhiddenfunc1ptr dhiddenfunc1 = dselu;
+dhiddenfunc2ptr dhiddenfunc2 = dselu;
+dhiddenfunc3ptr dhiddenfunc3 = dselu;
 doutputfuncptr  doutputfunc  = dsigmoid;
 
 // Error function and its derivative
@@ -243,7 +258,6 @@ double backpropagation (architechture network) {
     double hidden_gradients  [network.h_size];
 
     for (int i = 0; i < network.o_size; i++) {
-
         // Store error of this iteration
         output_error += error (network.targets[i], network.output[i]);
 
@@ -288,7 +302,6 @@ double backpropagation (architechture network) {
     }
 
     // Return the average error of this iteration
-    //printf ("%lf\t%lf\t%d\n", output_error/network.o_size, output_error, network.o_size);
     return output_error / network.o_size;
 }
 
@@ -306,26 +319,30 @@ void randomizer (architechture network) {
     for (int i = 0; i < network.h_size; i++) {
         for (int j = 0; j < network.hh_size; j++) {
             network.weights_hh[i][j] = frand();
-            network.bias_h[i] = 0;
+            //network.bias_h[i] = 0;
+            network.bias_h[i] = frand();
         }
     }
 
     for (int i = 0; i < network.hh_size; i++) {
         for (int j = 0; j < network.hhh_size; j++) {
             network.weights_hhh[i][j] = frand();
-            network.bias_hh[i] = 0;
+            //network.bias_hh[i] = 0;
+            network.bias_hh[i] = frand();
         }
     }
 
     for (int i = 0; i < network.hhh_size; i++) {
         for (int j = 0; j < network.o_size; j++) {
             network.weights_ho[i][j] = frand();
-            network.bias_hhh[i] = 0;
+            //network.bias_hhh[i] = 0;
+            network.bias_hhh[i] = frand();
         }
     }
 
     for (int i = 0; i < network.o_size; i++) {
-        network.bias_o[i] = 0;
+        //network.bias_o[i] = 0;
+        network.bias_o[i] = frand();
     }
 }
 
@@ -381,7 +398,7 @@ void readmodel (architechture network) {
         //int network.i_size, network.h_size, network.hh_size, network.hhh_size, network.o_size;
 
         // Load header
-        fscanf (loaded_model, "%d %d %d %d %d\n", &network.i_size, &network.h_size, &network.hh_size, &network.hhh_size, &network.o_size);
+        fscanf (loaded_model, "%hd %hd %hd %hd %hd\n", &network.i_size, &network.h_size, &network.hh_size, &network.hhh_size, &network.o_size);
 
         // Load weights/biases
          for (int i = 0; i < network.i_size; i++) {
@@ -437,6 +454,7 @@ int main (int argc, char **argv) {
     architechture network;
 
     char *separator = ",";
+
 
     // Obtain hyperparameters
     network.i_size   = atoi (argv[2]);
@@ -527,6 +545,8 @@ int main (int argc, char **argv) {
     // Train and generate weights/biases if a saved model doesn't exist
     if (!saved_model) {
 
+        clock_t begin = clock();
+
         /********************************
          * RANDOMIZE WEIGHTS AND BIASES *
          ********************************/
@@ -541,7 +561,7 @@ int main (int argc, char **argv) {
 
         FILE *saved_errors = fopen ("savederrors", "w");
 
-        for (int epoch = 0; epoch < network.epochs; epoch++) {
+        for (short epoch = 0; epoch < network.epochs; epoch++) {
 
             for (int row = 0; row < rows; row++) {
 
@@ -562,7 +582,7 @@ int main (int argc, char **argv) {
                 // Forward propagation
                 forwardpropagation(network);
 
-                // Store error
+                // Back propagation: store error
                 iteration_error [epoch] = backpropagation(network);
             }
 
@@ -584,6 +604,12 @@ int main (int argc, char **argv) {
          * SAVE WEIGHTS AND BIASES *
          ***************************/
         savemodel(network);
+
+        clock_t end = clock();
+
+        float time_passed = (float) (end-begin) / CLOCKS_PER_SEC;
+        
+        printf ("Done training on file %s in %.4f seconds.\n", argv[1], time_passed);
     }
 
     // Load weights and biases if a saved model exists
@@ -597,7 +623,7 @@ int main (int argc, char **argv) {
      ***********/
     for (int row = 0; row < rows; row++) {
 
-        // Pick random row to test
+        // Not training on a random row anymore for now
         //int selected_row = randrange (0, rows-1);
 
         for (int j = 0; j < network.i_size; j++) {
@@ -619,6 +645,7 @@ int main (int argc, char **argv) {
         }
         printf ("------\n");
     }
+
 
     /***************
      * FREE MEMORY *
